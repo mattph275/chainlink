@@ -2,11 +2,14 @@ package web
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -91,22 +94,76 @@ func guiEngine(app *services.ChainlinkApplication) *gin.Engine {
 		basicAuth,
 	)
 
-	box := packr.NewBox("../gui/dist/")
-	engine.NoRoute(func(c *gin.Context) {
-		if filepath.Ext(c.Request.URL.Path) == "" {
-			index, err := box.Open("index.html")
-			if err != nil {
-				logger.Warn(err)
-			}
+	box := guiBox()
+	boxList := box.List()
 
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(index)
-			c.Data(http.StatusOK, "text/html; charset=utf-8", buf.Bytes())
+	engine.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		if filepath.Ext(path) == "" {
+			matchedPath := matchPath(boxList, path, "/index.html")
+			if matchedPath != "" {
+				writeData(c, "text/html", box, matchedPath)
+			}
+		} else if filepath.Ext(path) == ".json" {
+			matchedPath := matchPath(boxList, path, "")
+			if matchedPath != "" {
+				writeData(c, "appliction/json", box, matchedPath)
+			}
 		}
 	})
 	engine.StaticFS("/", box)
 
 	return engine
+}
+
+func guiBox() packr.Box {
+	if flag.Lookup("test.v") == nil {
+		return packr.NewBox("../gui/dist/")
+	}
+
+	return packr.NewBox("../internal/fixtures/gui/dist/")
+}
+
+func matchPath(boxList []string, path string, suffix string) (matchedPath string) {
+	pathSegments := strings.Split(path, "/")
+	pathSegments = pathSegments[1:]
+
+	if len(pathSegments) > 0 {
+		i := 0
+		for i < len(pathSegments) && matchedPath == "" {
+			wildcardPathSegments := []string{}
+			wildcardPathSegments = append(wildcardPathSegments, pathSegments...)
+			wildcardPathSegments[i] = ":[a-zA-Z]+"
+			wildcardPath := strings.Join(wildcardPathSegments, "/")
+			wildcardIndex := fmt.Sprintf("^%s%s$", wildcardPath, suffix)
+
+			j := 0
+			for j < len(boxList) && matchedPath == "" {
+				boxPath := boxList[j]
+				match, _ := regexp.MatchString(wildcardIndex, boxPath)
+				if match {
+					matchedPath = boxPath
+				}
+				j++
+			}
+			i++
+		}
+
+	}
+
+	return matchedPath
+}
+
+func writeData(c *gin.Context, contentType string, box packr.Box, serveFile string) {
+	index, err := box.Open(serveFile)
+	if err != nil {
+		logger.Warn(err)
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(index)
+	c.Data(http.StatusOK, contentType, buf.Bytes())
 }
 
 // Inspired by https://github.com/gin-gonic/gin/issues/961

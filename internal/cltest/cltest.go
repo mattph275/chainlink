@@ -99,8 +99,9 @@ func (tc *TestConfig) SetEthereumServer(wss *httptest.Server) {
 // TestApplication holds the test application and test servers
 type TestApplication struct {
 	*services.ChainlinkApplication
-	Server   *httptest.Server
-	wsServer *httptest.Server
+	Server    *httptest.Server
+	GuiServer *httptest.Server
+	wsServer  *httptest.Server
 }
 
 func newWSServer() *httptest.Server {
@@ -136,12 +137,14 @@ func NewApplication() (*TestApplication, func()) {
 func NewApplicationWithConfig(tc *TestConfig) (*TestApplication, func()) {
 	app := services.NewApplication(tc.Config).(*services.ChainlinkApplication)
 	server := newApiServer(app)
+	guiServer := newGuiServer(app)
 	tc.Config.ClientNodeURL = server.URL
 	app.Store.Config = tc.Config
 	ethMock := MockEthOnStore(app.Store)
 	ta := &TestApplication{
 		ChainlinkApplication: app,
 		Server:               server,
+		GuiServer:            guiServer,
 		wsServer:             tc.wsServer,
 	}
 	return ta, func() {
@@ -175,6 +178,11 @@ func NewApplicationWithConfigAndKeyStore(tc *TestConfig) (*TestApplication, func
 func newApiServer(app *services.ChainlinkApplication) *httptest.Server {
 	apiEngine, _ := web.Router(app)
 	return httptest.NewServer(apiEngine)
+}
+
+func newGuiServer(app *services.ChainlinkApplication) *httptest.Server {
+	_, guiEngine := web.Router(app)
+	return httptest.NewServer(guiEngine)
 }
 
 // Stop will stop the test application and perform cleanup
