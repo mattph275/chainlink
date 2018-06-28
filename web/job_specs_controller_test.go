@@ -23,7 +23,7 @@ func BenchmarkJobSpecsController_Index(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs")
+		resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs")
 		assert.Equal(b, 200, resp.StatusCode, "Response should be successful")
 	}
 }
@@ -37,10 +37,10 @@ func TestJobSpecsController_Index(t *testing.T) {
 	j1, err := setupJobSpecsControllerIndex(app)
 	assert.NoError(t, err)
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs?size=x")
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs?size=x")
 	cltest.AssertServerResponse(t, resp, 422)
 
-	resp = cltest.BasicAuthGet(app.Server.URL + "/v2/specs?size=1")
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs?size=1")
 	cltest.AssertServerResponse(t, resp, 200)
 	body := cltest.ParseResponseBody(resp)
 
@@ -58,7 +58,7 @@ func TestJobSpecsController_Index(t *testing.T) {
 	assert.Len(t, jobs, 1)
 	assert.Equal(t, j1.Initiators[0].Schedule, jobs[0].Initiators[0].Schedule, "should have the same schedule")
 
-	resp = cltest.BasicAuthGet(app.Server.URL + links["next"].Href)
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + links["next"].Href)
 	cltest.AssertServerResponse(t, resp, 200)
 
 	jobs = []models.JobSpec{}
@@ -144,7 +144,7 @@ func TestJobSpecsController_Create_NonExistentTaskJob(t *testing.T) {
 
 	jsonStr := cltest.LoadJSON("../internal/fixtures/web/nonexistent_task_job.json")
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/specs",
+		app.ApiServer.URL+"/v2/specs",
 		"application/json",
 		bytes.NewBuffer(jsonStr),
 	)
@@ -162,7 +162,7 @@ func TestJobSpecsController_Create_InvalidJob(t *testing.T) {
 
 	jsonStr := cltest.LoadJSON("../internal/fixtures/web/run_at_wo_time_job.json")
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/specs",
+		app.ApiServer.URL+"/v2/specs",
 		"application/json",
 		bytes.NewBuffer(jsonStr),
 	)
@@ -180,7 +180,7 @@ func TestJobSpecsController_Create_InvalidCron(t *testing.T) {
 
 	jsonStr := cltest.LoadJSON("../internal/fixtures/web/invalid_cron.json")
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/specs",
+		app.ApiServer.URL+"/v2/specs",
 		"application/json",
 		bytes.NewBuffer(jsonStr),
 	)
@@ -198,7 +198,7 @@ func TestJobSpecsController_Create_Initiator_Only(t *testing.T) {
 
 	jsonStr := cltest.LoadJSON("../internal/fixtures/web/initiator_only_job.json")
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/specs",
+		app.ApiServer.URL+"/v2/specs",
 		"application/json",
 		bytes.NewBuffer(jsonStr),
 	)
@@ -216,7 +216,7 @@ func TestJobSpecsController_Create_Task_Only(t *testing.T) {
 
 	jsonStr := cltest.LoadJSON("../internal/fixtures/web/task_only_job.json")
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/specs",
+		app.ApiServer.URL+"/v2/specs",
 		"application/json",
 		bytes.NewBuffer(jsonStr),
 	)
@@ -234,7 +234,7 @@ func BenchmarkJobSpecsController_Show(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs/" + j.ID)
+		resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs/" + j.ID)
 		assert.Equal(b, 200, resp.StatusCode, "Response should be successful")
 	}
 }
@@ -250,7 +250,7 @@ func TestJobSpecsController_Show(t *testing.T) {
 	jr, err := app.Store.JobRunsFor(j.ID)
 	assert.NoError(t, err)
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs/" + j.ID)
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs/" + j.ID)
 	defer resp.Body.Close()
 	assert.Equal(t, 200, resp.StatusCode, "Response should be successful")
 
@@ -283,7 +283,7 @@ func TestJobSpecsController_Show_NotFound(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs/" + "garbage")
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs/" + "garbage")
 	assert.Equal(t, 404, resp.StatusCode, "Response should be not found")
 }
 
@@ -292,7 +292,7 @@ func TestJobSpecsController_Show_Unauthenticated(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	resp, err := http.Get(app.Server.URL + "/v2/specs/" + "garbage")
+	resp, err := http.Get(app.ApiServer.URL + "/v2/specs/" + "garbage")
 	assert.NoError(t, err)
 	assert.Equal(t, 401, resp.StatusCode, "Response should be forbidden")
 }

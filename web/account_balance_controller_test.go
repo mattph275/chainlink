@@ -15,7 +15,7 @@ func TestAccountBalanceController_IndexError(t *testing.T) {
 	appWithoutAccount, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	resp := cltest.BasicAuthGet(appWithoutAccount.Server.URL + "/v2/account_balance")
+	resp := cltest.BasicAuthGet(appWithoutAccount.ApiServer.URL + "/v2/account_balance")
 	body := cltest.ParseErrorsJSON(resp.Body)
 	assert.Equal(t, 400, resp.StatusCode)
 	assert.Equal(t, "No Ethereum Accounts configured", body.Errors[0])
@@ -31,7 +31,7 @@ func TestAccountBalanceController_Index(t *testing.T) {
 	ethMock.Register("eth_getBalance", "0x0100")
 	ethMock.Register("eth_call", "0x0100")
 
-	resp := cltest.BasicAuthGet(appWithAccount.Server.URL + "/v2/account_balance")
+	resp := cltest.BasicAuthGet(appWithAccount.ApiServer.URL + "/v2/account_balance")
 	assert.Equal(t, 200, resp.StatusCode)
 
 	account, err := appWithAccount.Store.KeyStore.GetAccount()

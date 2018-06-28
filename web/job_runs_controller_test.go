@@ -31,7 +31,7 @@ func BenchmarkJobRunsController_Index(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs/" + j.ID + "/runs")
+		resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs/" + j.ID + "/runs")
 		assert.Equal(b, 200, resp.StatusCode, "Response should be successful")
 	}
 }
@@ -46,10 +46,10 @@ func TestJobRunsController_Index(t *testing.T) {
 	jr, err := app.Store.JobRunsFor(j.ID)
 	assert.NoError(t, err)
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs/" + j.ID + "/runs?size=x")
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs/" + j.ID + "/runs?size=x")
 	cltest.AssertServerResponse(t, resp, 422)
 
-	resp = cltest.BasicAuthGet(app.Server.URL + "/v2/specs/" + j.ID + "/runs?size=1")
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs/" + j.ID + "/runs?size=1")
 	cltest.AssertServerResponse(t, resp, 200)
 
 	var links jsonapi.Links
@@ -63,7 +63,7 @@ func TestJobRunsController_Index(t *testing.T) {
 	assert.Len(t, runs, 1)
 	assert.Equal(t, jr[1].ID, runs[0].ID, "expected runs ordered by created at(descending)")
 
-	resp = cltest.BasicAuthGet(app.Server.URL + links["next"].Href)
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + links["next"].Href)
 	cltest.AssertServerResponse(t, resp, 200)
 
 	runs = []models.JobRun{}
@@ -131,7 +131,7 @@ func TestJobRunsController_Create_InvalidBody(t *testing.T) {
 	j, _ := cltest.NewJobWithWebInitiator()
 	assert.Nil(t, app.Store.SaveJob(&j))
 
-	url := app.Server.URL + "/v2/specs/" + j.ID + "/runs"
+	url := app.ApiServer.URL + "/v2/specs/" + j.ID + "/runs"
 	resp := cltest.BasicAuthPost(url, "application/json", bytes.NewBufferString(`{`))
 	defer resp.Body.Close()
 	cltest.AssertServerResponse(t, resp, 500)
@@ -145,7 +145,7 @@ func TestJobRunsController_Create_WithoutWebInitiator(t *testing.T) {
 	j := cltest.NewJob()
 	assert.Nil(t, app.Store.SaveJob(&j))
 
-	url := app.Server.URL + "/v2/specs/" + j.ID + "/runs"
+	url := app.ApiServer.URL + "/v2/specs/" + j.ID + "/runs"
 	resp := cltest.BasicAuthPost(url, "application/json", bytes.NewBuffer([]byte{}))
 	assert.Equal(t, 403, resp.StatusCode, "Response should be forbidden")
 }
@@ -155,7 +155,7 @@ func TestJobRunsController_Create_NotFound(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	url := app.Server.URL + "/v2/specs/garbageID/runs"
+	url := app.ApiServer.URL + "/v2/specs/garbageID/runs"
 	resp := cltest.BasicAuthPost(url, "application/json", bytes.NewBuffer([]byte{}))
 	assert.Equal(t, 404, resp.StatusCode, "Response should be not found")
 }
@@ -173,7 +173,7 @@ func TestJobRunsController_Update_Success(t *testing.T) {
 	jr := cltest.MarkJobRunPendingBridge(j.NewRun(initr), 0)
 	assert.Nil(t, app.Store.Save(&jr))
 
-	url := app.Server.URL + "/v2/runs/" + jr.ID
+	url := app.ApiServer.URL + "/v2/runs/" + jr.ID
 	body := fmt.Sprintf(`{"id":"%v","data":{"value": "100"}}`, jr.ID)
 	resp := cltest.BasicAuthPatch(url, "application/json", bytes.NewBufferString(body))
 	assert.Equal(t, 200, resp.StatusCode, "Response should be successful")
@@ -199,7 +199,7 @@ func TestJobRunsController_Update_NotPending(t *testing.T) {
 	jr := j.NewRun(initr)
 	assert.Nil(t, app.Store.Save(&jr))
 
-	url := app.Server.URL + "/v2/runs/" + jr.ID
+	url := app.ApiServer.URL + "/v2/runs/" + jr.ID
 	body := fmt.Sprintf(`{"id":"%v","data":{"value": "100"}}`, jr.ID)
 	resp := cltest.BasicAuthPatch(url, "application/json", bytes.NewBufferString(body))
 	assert.Equal(t, 405, resp.StatusCode, "Response should be unsuccessful")
@@ -218,7 +218,7 @@ func TestJobRunsController_Update_WithError(t *testing.T) {
 	jr := cltest.MarkJobRunPendingBridge(j.NewRun(initr), 0)
 	assert.Nil(t, app.Store.Save(&jr))
 
-	url := app.Server.URL + "/v2/runs/" + jr.ID
+	url := app.ApiServer.URL + "/v2/runs/" + jr.ID
 	body := fmt.Sprintf(`{"id":"%v","error":"stack overflow","data":{"value": "0"}}`, jr.ID)
 	resp := cltest.BasicAuthPatch(url, "application/json", bytes.NewBufferString(body))
 	assert.Equal(t, 200, resp.StatusCode, "Response should be successful")
@@ -244,7 +244,7 @@ func TestJobRunsController_Update_BadInput(t *testing.T) {
 	jr := cltest.MarkJobRunPendingBridge(j.NewRun(initr), 0)
 	assert.Nil(t, app.Store.Save(&jr))
 
-	url := app.Server.URL + "/v2/runs/" + jr.ID
+	url := app.ApiServer.URL + "/v2/runs/" + jr.ID
 	body := fmt.Sprint(`{`, jr.ID)
 	resp := cltest.BasicAuthPatch(url, "application/json", bytes.NewBufferString(body))
 	assert.Equal(t, 500, resp.StatusCode, "Response should be successful")
@@ -265,7 +265,7 @@ func TestJobRunsController_Update_NotFound(t *testing.T) {
 	jr := cltest.MarkJobRunPendingBridge(j.NewRun(initr), 0)
 	assert.Nil(t, app.Store.Save(&jr))
 
-	url := app.Server.URL + "/v2/runs/" + jr.ID + "1"
+	url := app.ApiServer.URL + "/v2/runs/" + jr.ID + "1"
 	body := fmt.Sprintf(`{"id":"%v","data":{"value": "100"}}`, jr.ID)
 	resp := cltest.BasicAuthPatch(url, "application/json", bytes.NewBufferString(body))
 	assert.Equal(t, 404, resp.StatusCode, "Response should be successful")
@@ -286,7 +286,7 @@ func TestJobRunsController_Show_Found(t *testing.T) {
 	jr.ID = "jobrun1"
 	assert.Nil(t, app.Store.Save(&jr))
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/runs/" + jr.ID)
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/runs/" + jr.ID)
 	defer resp.Body.Close()
 	assert.Equal(t, 200, resp.StatusCode, "Response should be successful")
 
@@ -303,7 +303,7 @@ func TestJobRunsController_Show_NotFound(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/runs/garbage")
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/runs/garbage")
 	assert.Equal(t, 404, resp.StatusCode, "Response should be not found")
 }
 
@@ -312,7 +312,7 @@ func TestJobRunsController_Show_Unauthenticated(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	resp, err := http.Get(app.Server.URL + "/v2/runs/notauthorized")
+	resp, err := http.Get(app.ApiServer.URL + "/v2/runs/notauthorized")
 	assert.NoError(t, err)
 	assert.Equal(t, 401, resp.StatusCode, "Response should be forbidden")
 }

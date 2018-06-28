@@ -99,7 +99,7 @@ func (tc *TestConfig) SetEthereumServer(wss *httptest.Server) {
 // TestApplication holds the test application and test servers
 type TestApplication struct {
 	*services.ChainlinkApplication
-	Server    *httptest.Server
+	ApiServer *httptest.Server
 	GuiServer *httptest.Server
 	wsServer  *httptest.Server
 }
@@ -136,14 +136,14 @@ func NewApplication() (*TestApplication, func()) {
 // NewApplicationWithConfig creates a New TestApplication with specified test config
 func NewApplicationWithConfig(tc *TestConfig) (*TestApplication, func()) {
 	app := services.NewApplication(tc.Config).(*services.ChainlinkApplication)
-	server := newApiServer(app)
+	apiServer := newApiServer(app)
 	guiServer := newGuiServer(app)
-	tc.Config.ClientNodeURL = server.URL
+	tc.Config.ClientNodeURL = apiServer.URL
 	app.Store.Config = tc.Config
 	ethMock := MockEthOnStore(app.Store)
 	ta := &TestApplication{
 		ChainlinkApplication: app,
-		Server:               server,
+		ApiServer:            apiServer,
 		GuiServer:            guiServer,
 		wsServer:             tc.wsServer,
 	}
@@ -189,8 +189,8 @@ func newGuiServer(app *services.ChainlinkApplication) *httptest.Server {
 func (ta *TestApplication) Stop() error {
 	ta.ChainlinkApplication.Stop()
 	cleanUpStore(ta.Store)
-	if ta.Server != nil {
-		ta.Server.Close()
+	if ta.ApiServer != nil {
+		ta.ApiServer.Close()
 	}
 	if ta.wsServer != nil {
 		ta.wsServer.Close()
@@ -390,7 +390,7 @@ func ReadLogs(app *TestApplication) (string, error) {
 // FixtureCreateJobViaWeb creates a job from a fixture using /v2/specs
 func FixtureCreateJobViaWeb(t *testing.T, app *TestApplication, path string) models.JobSpec {
 	resp := BasicAuthPost(
-		app.Server.URL+"/v2/specs",
+		app.ApiServer.URL+"/v2/specs",
 		"application/json",
 		bytes.NewBuffer(LoadJSON(path)),
 	)
@@ -419,7 +419,7 @@ func FindJobRun(s *store.Store, id string) models.JobRun {
 // FixtureCreateJobWithAssignmentViaWeb creates a job from a fixture using /v1/assignments
 func FixtureCreateJobWithAssignmentViaWeb(t *testing.T, app *TestApplication, path string) models.JobSpec {
 	resp := BasicAuthPost(
-		app.Server.URL+"/v1/assignments",
+		app.ApiServer.URL+"/v1/assignments",
 		"application/json",
 		bytes.NewBuffer(LoadJSON(path)),
 	)
@@ -433,7 +433,7 @@ func CreateJobSpecViaWeb(t *testing.T, app *TestApplication, job models.JobSpec)
 	marshaled, err := json.Marshal(&job)
 	assert.NoError(t, err)
 	resp := BasicAuthPost(
-		app.Server.URL+"/v2/specs",
+		app.ApiServer.URL+"/v2/specs",
 		"application/json",
 		bytes.NewBuffer(marshaled),
 	)
@@ -445,7 +445,7 @@ func CreateJobSpecViaWeb(t *testing.T, app *TestApplication, job models.JobSpec)
 // CreateJobRunViaWeb creates JobRun via web using /v2/specs/ID/runs
 func CreateJobRunViaWeb(t *testing.T, app *TestApplication, j models.JobSpec, body ...string) models.JobRun {
 	t.Helper()
-	url := app.Server.URL + "/v2/specs/" + j.ID + "/runs"
+	url := app.ApiServer.URL + "/v2/specs/" + j.ID + "/runs"
 	bodyBuffer := &bytes.Buffer{}
 	if len(body) > 0 {
 		bodyBuffer = bytes.NewBufferString(body[0])
@@ -489,7 +489,7 @@ func UpdateJobRunViaWeb(
 	body string,
 ) models.JobRun {
 	t.Helper()
-	url := app.Server.URL + "/v2/runs/" + jr.ID
+	url := app.ApiServer.URL + "/v2/runs/" + jr.ID
 	resp := BasicAuthPatch(url, "application/json", bytes.NewBufferString(body))
 	defer resp.Body.Close()
 
@@ -506,7 +506,7 @@ func CreateBridgeTypeViaWeb(
 	payload string,
 ) models.BridgeType {
 	resp := BasicAuthPost(
-		app.Server.URL+"/v2/bridge_types",
+		app.ApiServer.URL+"/v2/bridge_types",
 		"application/json",
 		bytes.NewBufferString(payload),
 	)

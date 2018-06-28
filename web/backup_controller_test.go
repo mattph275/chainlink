@@ -12,6 +12,6 @@ func TestBackupController_Show(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/backup")
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/backup")
 	cltest.AssertServerResponse(t, resp, 200)
 }

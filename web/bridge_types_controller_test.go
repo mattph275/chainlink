@@ -20,7 +20,7 @@ func BenchmarkBridgeTypesController_Index(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs")
+		resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs")
 		assert.Equal(b, 200, resp.StatusCode, "Response should be successful")
 	}
 }
@@ -34,10 +34,10 @@ func TestBridgeTypesController_Index(t *testing.T) {
 	bt, err := setupBridgeControllerIndex(app)
 	assert.NoError(t, err)
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/specs?size=x")
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/specs?size=x")
 	cltest.AssertServerResponse(t, resp, 422)
 
-	resp = cltest.BasicAuthGet(app.Server.URL + "/v2/bridge_types?size=1")
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + "/v2/bridge_types?size=1")
 	cltest.AssertServerResponse(t, resp, 200)
 
 	var links jsonapi.Links
@@ -53,7 +53,7 @@ func TestBridgeTypesController_Index(t *testing.T) {
 	assert.Equal(t, bt[0].URL.String(), bridges[0].URL.String(), "should have the same URL")
 	assert.Equal(t, bt[0].DefaultConfirmations, bridges[0].DefaultConfirmations, "should have the same DefaultConfirmations")
 
-	resp = cltest.BasicAuthGet(app.Server.URL + links["next"].Href)
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + links["next"].Href)
 	cltest.AssertServerResponse(t, resp, 200)
 
 	bridges = []models.BridgeType{}
@@ -92,7 +92,7 @@ func TestBridgeTypesController_Create(t *testing.T) {
 	defer cleanup()
 
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/bridge_types",
+		app.ApiServer.URL+"/v2/bridge_types",
 		"application/json",
 		bytes.NewBuffer(cltest.LoadJSON("../internal/fixtures/web/create_random_number_bridge_type.json")),
 	)
@@ -118,7 +118,7 @@ func TestBridgeController_Show(t *testing.T) {
 	err := app.AddAdapter(bt)
 	assert.NoError(t, err)
 
-	resp := cltest.BasicAuthGet(app.Server.URL + "/v2/bridge_types/" + bt.Name)
+	resp := cltest.BasicAuthGet(app.ApiServer.URL + "/v2/bridge_types/" + bt.Name)
 	assert.Equal(t, 200, resp.StatusCode, "Response should be successful")
 
 	var respBridge presenters.BridgeType
@@ -127,7 +127,7 @@ func TestBridgeController_Show(t *testing.T) {
 	assert.Equal(t, respBridge.URL.String(), bt.URL.String(), "should have the same URL")
 	assert.Equal(t, respBridge.DefaultConfirmations, bt.DefaultConfirmations, "should have the same DefaultConfirmations")
 
-	resp = cltest.BasicAuthGet(app.Server.URL + "/v2/bridge_types/nosuchbridge")
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + "/v2/bridge_types/nosuchbridge")
 	assert.Equal(t, 404, resp.StatusCode, "Response should be 404")
 }
 
@@ -136,7 +136,7 @@ func TestBridgeController_Destroy(t *testing.T) {
 
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
-	resp := cltest.BasicAuthDelete(app.Server.URL+"/v2/bridge_types/testingbridges1",
+	resp := cltest.BasicAuthDelete(app.ApiServer.URL+"/v2/bridge_types/testingbridges1",
 		"application/json",
 		nil)
 	assert.Equal(t, 404, resp.StatusCode, "Response should be 404")
@@ -147,11 +147,11 @@ func TestBridgeController_Destroy(t *testing.T) {
 	err := app.AddAdapter(bt)
 	assert.NoError(t, err)
 
-	resp = cltest.BasicAuthDelete(app.Server.URL+"/v2/bridge_types/"+bt.Name,
+	resp = cltest.BasicAuthDelete(app.ApiServer.URL+"/v2/bridge_types/"+bt.Name,
 		"application/json",
 		nil)
 	assert.Equal(t, 200, resp.StatusCode, "Response should be successful")
-	resp = cltest.BasicAuthGet(app.Server.URL + "/v2/bridge_types/testingbridges2")
+	resp = cltest.BasicAuthGet(app.ApiServer.URL + "/v2/bridge_types/testingbridges2")
 	assert.Equal(t, 404, resp.StatusCode, "Response should be 404")
 }
 
@@ -162,7 +162,7 @@ func TestBridgeTypesController_Create_AdapterExistsError(t *testing.T) {
 	defer cleanup()
 
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/bridge_types",
+		app.ApiServer.URL+"/v2/bridge_types",
 		"application/json",
 		bytes.NewBuffer(cltest.LoadJSON("../internal/fixtures/web/existing_core_adapter.json")),
 	)
@@ -176,7 +176,7 @@ func TestBridgeTypesController_Create_BindJSONError(t *testing.T) {
 	defer cleanup()
 
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/bridge_types",
+		app.ApiServer.URL+"/v2/bridge_types",
 		"application/json",
 		bytes.NewBufferString("}"),
 	)
@@ -190,7 +190,7 @@ func TestBridgeTypesController_Create_DatabaseError(t *testing.T) {
 	defer cleanup()
 
 	resp := cltest.BasicAuthPost(
-		app.Server.URL+"/v2/bridge_types",
+		app.ApiServer.URL+"/v2/bridge_types",
 		"application/json",
 		bytes.NewBufferString(`{"url":"http://without.a.name"}`),
 	)
