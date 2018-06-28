@@ -25,16 +25,16 @@ func TestGuiAssets_WildcardIndexMatch(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
 	defer cleanup()
 
-	resp := cltest.BasicAuthGet(app.GuiServer.URL + "/job_specs/abc123")
+	resp := cltest.BasicAuthGet(app.GuiServer.URL + "/job_specs/_abc123_")
 	cltest.AssertServerResponse(t, resp, 200)
 
-	resp = cltest.BasicAuthGet(app.GuiServer.URL + "/jjob_specs/abc123")
+	resp = cltest.BasicAuthGet(app.GuiServer.URL + "/jjob_specs/_abc123_")
 	cltest.AssertServerResponse(t, resp, 404)
 
-	resp = cltest.BasicAuthGet(app.GuiServer.URL + "/job_specs/abc123/runs")
+	resp = cltest.BasicAuthGet(app.GuiServer.URL + "/job_specs/_abc123_/runs")
 	cltest.AssertServerResponse(t, resp, 200)
 
-	resp = cltest.BasicAuthGet(app.GuiServer.URL + "/job_specs/abc123/rruns")
+	resp = cltest.BasicAuthGet(app.GuiServer.URL + "/job_specs/_abc123_/rruns")
 	cltest.AssertServerResponse(t, resp, 404)
 }
 

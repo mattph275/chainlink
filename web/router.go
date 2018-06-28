@@ -134,7 +134,7 @@ func matchPath(boxList []string, path string, suffix string) (matchedPath string
 		for i < len(pathSegments) && matchedPath == "" {
 			wildcardPathSegments := []string{}
 			wildcardPathSegments = append(wildcardPathSegments, pathSegments...)
-			wildcardPathSegments[i] = ":[a-zA-Z]+"
+			wildcardPathSegments[i] = "_[a-zA-Z]+_"
 			wildcardPath := strings.Join(wildcardPathSegments, "/")
 			wildcardIndex := fmt.Sprintf("^%s%s$", wildcardPath, suffix)
 
