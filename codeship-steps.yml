@@ -28,11 +28,11 @@
 - name: Docker Publish
   type: parallel
   steps:
-  - name: Image w/Timestamp + Version Tag
+  - name: Image w/Branch + Version Tag
     type: push
     service: app
     image_name: smartcontract/chainlink
-    image_tag: "0.2.0-{{.StringTime}}"
+    image_tag: "0.2.0-{{.Branch}}"
     registry: https://index.docker.io/v1/
     encrypted_dockercfg_path: internal/ci/dockercfg.encrypted
   - name: Image w/Version Tag
@@ -51,11 +51,11 @@
     image_tag: latest
     registry: https://index.docker.io/v1/
     encrypted_dockercfg_path: internal/ci/dockercfg.encrypted
-  - name: SGX Image w/Timestamp + Version Tag
+  - name: SGX Image w/Branch + Version Tag
     type: push
     service: app-sgx
     image_name: smartcontract/chainlink-sgx
-    image_tag: "0.2.0-{{.StringTime}}"
+    image_tag: "0.2.0-{{.Branch}}"
     registry: https://index.docker.io/v1/
     encrypted_dockercfg_path: internal/ci/dockercfg.encrypted
   - name: SGX Image w/Version Tag
@@ -74,3 +74,13 @@
     image_tag: latest
     registry: https://index.docker.io/v1/
     encrypted_dockercfg_path: internal/ci/dockercfg.encrypted
+
+- name: Deploy to Acceptance
+  exclude: ^master
+  service: deploy
+  command: ./ci/gcp-deploy.sh
+
+- name: Deploy to Production
+  tag: master
+  service: deploy
+  command: ./ci/gcp-deploy.sh
