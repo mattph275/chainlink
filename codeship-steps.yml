@@ -21,10 +21,6 @@
     service: app-sgx
     command: --version
 
-- name: Publish Coverage Stats
-  service: ci
-  command: bash -c "curl -s https://codecov.io/bash"
-
 - name: Docker Publish
   type: parallel
   steps:
